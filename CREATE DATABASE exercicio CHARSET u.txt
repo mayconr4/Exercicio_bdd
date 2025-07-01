@@ -1,0 +1,17 @@
+CREATE DATABASE exercicio CHARSET utf8mb4; 
+
+USE exercicio;
+
+CREATE TABLE usuarios(
+codigo INTEGER PRIMARY KEY AUTO_INCREMENT ,
+nome VARCHAR(70) NOT NULL,
+email VARCHAR(50) NOT NULL
+);  
+
+INSERT INTO usuarios(nome,email) VALUES
+('Sérgio Furgeri','user1@gmail.com'),
+ ( 'Daniel Almeida','user2@gmail.com'),
+ ( 'Lucas Ferreira','user3@gmail.com'),
+  ('Ivone Medeiros','user4@gmail.com');
+
+SELECT * FROM usuarios;
