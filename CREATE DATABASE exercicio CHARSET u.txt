@@ -14,4 +14,382 @@ INSERT INTO usuarios(nome,email) VALUES
  ( 'Lucas Ferreira','user3@gmail.com'),
   ('Ivone Medeiros','user4@gmail.com');
 
-SELECT * FROM usuarios;
+SELECT * FROM usuarios; 
+
+
+pasta BD
+
+
+
+BD.java
+
+package BD;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+
+import javax.swing.JOptionPane;
+
+public class BD {
+
+	public Connection conn = null;
+	private final String DRIVER = "com.mysql.cj.jdbc.Driver";
+	private final String DBNAME = "exercicio";
+	private final String URL = "jdbc:mysql://localhost:3306/"+DBNAME;
+	private final String LOGIN = "root";
+	private final String  SENHA = "senai@126"; 
+	
+	public boolean getConnection() {
+		try {
+			Class.forName(DRIVER);
+			conn = DriverManager.getConnection(URL,LOGIN,SENHA);
+			JOptionPane.showMessageDialog(null, "conectou");
+			return true;
+			
+		}catch (ClassNotFoundException erro) {
+			JOptionPane.showMessageDialog(null, "Driiver de conexão não encontrado "+erro.toString());
+			return false;
+		}catch (SQLException erro) {
+			JOptionPane.showMessageDialog(null, "Usuario ou senha não enncontrado "+erro.toString());
+			return false;
+		}
+	}
+	
+	
+	public void close() {
+		try {
+			conn.close();
+		}catch (Exception erro) {
+			
+		}
+	}
+}
+
+
+----
+Conecta
+
+
+package BD;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+
+import javax.swing.JOptionPane;
+
+public class Conecta {
+
+	public static void main(String[] args) {
+		final String DRIVER = "com.mysql.cj.jdbc.Driver";
+		final String URL = "jdbc:mysql://localhost:3306/banco";
+		
+		try {
+			Class.forName(DRIVER);
+			Connection connection = DriverManager.getConnection(URL,"root","senai@126");
+			JOptionPane.showMessageDialog(null,"Conexão realizada com sucesso!!!!");	
+			connection.close();
+			
+		} catch (ClassNotFoundException erro) {
+			JOptionPane.showMessageDialog(null,"Driver não encotrado!\n"+erro.toString());
+			
+		}catch (SQLException erro) {
+			JOptionPane.showMessageDialog(null,"Usuario ou senha inválidos erro na conexão "+erro.toString());
+		}
+
+	}
+
+}
+
+----
+
+ConsultaUlsuarios
+
+package BD;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+import javax.swing.JOptionPane;
+
+public class ConsultaUsuarios {
+
+	public static void main(String[] args) {
+		BD bd = new BD();
+		
+		if(bd.getConnection()) {
+			Connection connection = bd.conn;
+			
+			String sql = "SELECT codigo, email FROM exercicio ORDER BY codigo";
+			try {
+				PreparedStatement statement = connection.prepareStatement(sql);
+				ResultSet resultSet = statement.executeQuery();
+				
+				System.out.println("Código Título");
+				System.out.println("______ __________________________________");
+				
+				while(resultSet.next()) {
+					String codigo = resultSet.getString("codigo");
+					String email = resultSet.getString("email");
+					System.out.println(codigo+"    "+email);
+				}
+				
+				resultSet.close();
+				statement.close();    
+				
+			}catch (SQLException erro) {
+				JOptionPane.showMessageDialog(null, "Usuariio ou senha inválido");
+			}finally {
+				bd.close();
+			} 			
+			
+		}
+
+	}
+
+}
+----
+
+TestaConexao
+
+package BD;
+
+public class TestaConexao {
+
+	public static void main(String[] args) {
+		BD bd = new BD();
+		
+		bd.getConnection();
+
+	}
+
+}
+
+
+-----
+
+Fim pasta BD
+
+
+pasta view
+
+package view;
+
+import java.awt.FlowLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JTextField;
+
+import BD.BD;
+
+public class NavegaUsuarios extends JFrame {
+
+	private JLabel label1, label2,label3;
+	private JButton btProximo,btAnterior,btPrimeiro, btUltimo,btSair;
+	private JTextField tfCodigo, tfNome, tfEmail;
+	private BD bd;
+	private PreparedStatement stm;
+	private ResultSet result;
+	
+	public static void main(String[] args) {
+		JFrame frame = new NavegaUsuarios();
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setVisible(true);
+	}
+	
+	public NavegaUsuarios() {
+		inicializarComponentes();
+		definirEventos();
+	}
+
+	
+
+	private void inicializarComponentes() {
+		setLayout(new FlowLayout(FlowLayout.LEFT));
+		label1 = new JLabel("Código");
+		add(label1);
+		tfCodigo= new JTextField(10);
+		add(tfCodigo);
+		label2 = new JLabel("Nome");
+		add(label2);
+		tfNome = new JTextField(70);
+		add(tfNome);
+		label3 = new JLabel("Email");
+		add(label3);
+		tfEmail = new JTextField(50);
+		add(tfEmail);
+		
+		btPrimeiro = new JButton("Primeiro");
+		add(btPrimeiro);
+		btUltimo = new JButton("Ultimo");
+		add(btUltimo);
+		btProximo = new JButton(">");
+		add(btProximo);
+		btAnterior = new JButton("<");
+		add(btAnterior);
+		btSair = new JButton("Sair");
+		add(btSair);
+		
+		
+		btProximo.setToolTipText("Proximo");
+		btAnterior.setToolTipText("Anterior");
+		btPrimeiro.setToolTipText("Primeiro");
+		btUltimo.setToolTipText("Ultimo");
+		
+		setTitle("Navegando na Tabela de Usuarios");
+		setBounds(200,400,620,150);
+		setResizable(false);
+		bd = new BD();
+		if(!bd.getConnection()) {
+			JOptionPane.showMessageDialog(null, "Falha ao conectar no banco de dados");
+		}
+		carregarTabela();
+		atualizarCampos();
+		
+		
+	}
+	
+	private void definirEventos() {
+		
+		btProximo.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				try {
+					result.next();
+					atualizarCampos();
+					
+				} catch (Exception e2) {
+					
+				}
+				
+			}
+		});  
+		
+		btAnterior.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				try {
+					result.previous();
+					atualizarCampos();
+				} catch (Exception e2) {
+					// TODO: handle exception
+				}
+				
+			}
+		});  
+		
+		btPrimeiro.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				try {
+					result.first();
+					atualizarCampos();
+				} catch (Exception e2) {
+					
+				}
+				
+			}
+			});
+		
+		btUltimo.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				try {
+					result.last();
+					atualizarCampos();
+				} catch (Exception e2) {
+					
+				}
+				
+			}
+				});
+		
+		
+		
+		btSair.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				try {
+					result.close();
+					stm.close();
+					
+				} catch (Exception e2) {
+					
+				}
+				bd.close();
+				System.exit(0);
+				
+			}
+				});
+				
+			}
+		
+		
+		
+	
+	
+	
+
+	 
+	
+	private void carregarTabela() {
+		
+		String sql = "SELECT * FROM usuarios";
+		try {
+			stm = bd.conn.prepareStatement(sql,
+					ResultSet.TYPE_SCROLL_INSENSITIVE,// Neccessario para navegação
+					ResultSet.CONCUR_READ_ONLY
+					);
+			result = stm.executeQuery();
+		} catch (SQLException e) {
+			JOptionPane.showMessageDialog(null,"Erro!"+e.toString());
+		}
+		
+	}
+	
+	
+	private void atualizarCampos() {
+		try {
+			if (result.isAfterLast()) {
+				result.last();
+			}
+			
+			if (result.isBeforeFirst()) {
+				result.first();
+			} 			
+			tfCodigo.setText(result.getString("codigo"));
+			tfNome.setText(result.getString("nome"));
+			tfEmail.setText(result.getString("email"));
+			
+			
+		} catch (Exception e) {
+			
+		}
+		
+	}
+
+
+}
+----
+
+depois criar o library em casa com o mysqlConector
+
+
+
+
